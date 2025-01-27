@@ -1,0 +1,65 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Роли пользователей
+enum Role {
+  ADMIN
+  USER
+}
+
+// Модель пользователей
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  password     String
+  name         String?
+  role         Role          @default(USER)
+  transactions Transaction[]
+  categories   Category[]
+}
+
+// Справочник типов транзакций (например: INCOME, EXPENSE и т.д.)
+model TransactionType {
+  id          Int    @id @default(autoincrement())
+  machineName String @unique // Машинное имя (slug)
+  name        String
+
+  transactions Transaction[]
+}
+
+// Категории. Теперь они принадлежат конкретному пользователю
+model Category {
+  id          Int    @id @default(autoincrement())
+  machineName String @unique // Машинное имя (slug)
+  name        String
+
+  // Владелец категории (пользователь)
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  transactions Transaction[]
+}
+
+// Транзакции, ссылаются и на тип, и на категорию, и на пользователя
+model Transaction {
+  id Int @id @default(autoincrement())
+
+  categoryId Int
+  category   Category @relation(fields: [categoryId], references: [id])
+
+  typeId Int
+  type   TransactionType @relation(fields: [typeId], references: [id])
+
+  amount      Float
+  date        DateTime @default(now())
+  description String?
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+}
